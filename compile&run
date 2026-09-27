@@ -1,0 +1,18 @@
+#!/bin/sh
+
+clang++ -o bin/main ./src/main.cpp -I ${VULKAN_SDK}/include/ -I include/ -lvulkan -lglfw -Wall -Werror -pedantic
+
+if [ $? != 0 ]; then
+  echo "FAILED TO COMPILE"
+  exit -1
+else 
+
+
+  echo
+  echo
+  echo "|COMPILED|"
+  echo
+  echo
+  ./bin/main
+
+fi
