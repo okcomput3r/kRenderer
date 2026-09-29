@@ -1,10 +1,18 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <vulkan/vulkan.h>
+
+#include <stdio.h>
+
 #include <cstdint>
 #include <cstring>
 #include <iostream>
-#include <stdio.h>
-#include <vulkan/vulkan.h>
+
+
+// change later
+#include <fstream>
+#include <vector>
+
 
 constexpr uint32_t WIDTH = 800;
 constexpr uint32_t HEIGHT = 600;
@@ -45,6 +53,11 @@ VkExtent2D surfaceExtent;
 // surface formats
 uint32_t    surfaceFormatIndex = 0;
 VkSurfaceFormatKHR *surfaceFormats;
+
+VkShaderModule shaderModule;
+VkPipelineLayout pipelineLayout = nullptr;
+
+VkPipeline graphicsPipeline = nullptr;
 
 RET_CODE init_glfw_window() {
 
@@ -347,7 +360,7 @@ RET_CODE setup_swapchain_vk() {
     minImageCount = surfaceCapabilities.maxImageCount;
   }
 
-  // Create the swapchain 
+  // Create the swapchain
 
   VkSwapchainCreateInfoKHR swapchainCreateInfo {};
   swapchainCreateInfo.surface = surface;
@@ -363,7 +376,7 @@ RET_CODE setup_swapchain_vk() {
   swapchainCreateInfo.presentMode = presentationModes[PresentIndex];
   swapchainCreateInfo.clipped = true;
 
-  if (vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &swapchain))
+  if (vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &swapchain) != VK_SUCCESS)
     return RET_CODE::RETURN_FAILED;
 
 
@@ -392,25 +405,154 @@ RET_CODE setup_swapchain_vk() {
   return RET_CODE::RETURN_SUCCES;
 }
 
+
+
+
+// CHANGE LATER TODO
+
+static std::vector<char> readFile(const std::string& filename){
+  std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+  if (!file.is_open()) {
+    std::cout << "failed to open file!" << std::endl;
+  }
+
+  std::vector<char> buffer(file.tellg());
+  file.seekg(0, std::ios::beg);
+  file.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
+
+  file.close();
+
+  return buffer;
+
+}
+
+
+RET_CODE setup_graphic_pipeline_vk(){
+
+  std::vector<char> shaderCode = readFile("./slang.spv");
+
+  // Create shader module
+
+  VkShaderModuleCreateInfo createInfo {};
+  createInfo.codeSize = shaderCode.size() * sizeof(char);
+  createInfo.pCode = reinterpret_cast<const uint32_t*>(shaderCode.data());
+
+  vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule);
+
+  // Instanciate shader stages
+
+  VkPipelineShaderStageCreateInfo vertexShaderStageInfo {};
+  vertexShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+  vertexShaderStageInfo.module = shaderModule;
+  vertexShaderStageInfo.pName = "vertMain";
+
+  VkPipelineShaderStageCreateInfo fragmentShaderStageInfo {};
+  fragmentShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+  fragmentShaderStageInfo.module = shaderModule;
+  fragmentShaderStageInfo.pName = "fragMain";
+
+  VkPipelineShaderStageCreateInfo shaderStages[] = {vertexShaderStageInfo, fragmentShaderStageInfo};
+
+  // Construct pipeline
+
+
+  VkPipelineVertexInputStateCreateInfo vertexInputInfo {}; // empty for now (dynamic rendering)
+
+  VkPipelineInputAssemblyStateCreateInfo inputAssembly {};
+  inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+  VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+  VkPipelineDynamicStateCreateInfo dynamicState {};
+  dynamicState.dynamicStateCount = 2; // hardcode TODO
+  dynamicState.pDynamicStates = dynamicStates;
+
+
+  // Will be used later at draw time TODO
+  
+  //VkViewport viewport {0.0f, 0.0f, static_cast<float>(surfaceExtent.width), static_cast<float>(surfaceExtent.height), 0.0f, 1.0f};
+  //VkRect2D scissor {VkOffset2D { 0, 0}, surfaceExtent};
+
+  VkPipelineViewportStateCreateInfo viewportState {};
+  viewportState.viewportCount = 1;
+  viewportState.scissorCount = 1;
+
+  VkPipelineRasterizationStateCreateInfo rasterizer {};
+  rasterizer.depthClampEnable = VK_FALSE;
+  rasterizer.polygonMode      = VK_POLYGON_MODE_FILL;
+  rasterizer.cullMode         = VK_CULL_MODE_BACK_BIT;
+  rasterizer.frontFace        = VK_FRONT_FACE_CLOCKWISE;
+  rasterizer.depthBiasEnable  = VK_FALSE;
+  rasterizer.lineWidth        = 1.0f;
+
+  VkPipelineMultisampleStateCreateInfo multisampling {}; // disabled for now
+  multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+  multisampling.sampleShadingEnable = VK_FALSE;
+
+  VkPipelineColorBlendAttachmentState colorBlendAttachement {};
+  colorBlendAttachement.blendEnable    = VK_FALSE;
+  colorBlendAttachement.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+  VkPipelineColorBlendStateCreateInfo colorBlending {};
+  colorBlending.logicOpEnable   = VK_FALSE;
+  colorBlending.logicOp         = VK_LOGIC_OP_COPY;
+  colorBlending.attachmentCount = 1;
+  colorBlending.pAttachments    = &colorBlendAttachement;
+
+
+  VkPipelineLayoutCreateInfo pipelineLayoutInfo {};
+  pipelineLayoutInfo.setLayoutCount = 0;
+  pipelineLayoutInfo.pushConstantRangeCount = 0;
+
+  vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout);
+
+  VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo {};
+  pipelineRenderingCreateInfo.colorAttachmentCount = 1;
+  pipelineRenderingCreateInfo.pColorAttachmentFormats = &surfaceFormats[surfaceFormatIndex].format;
+
+  VkGraphicsPipelineCreateInfo pipelineCreateInfo {};
+  pipelineCreateInfo.stageCount          = 2;
+  pipelineCreateInfo.pStages             = shaderStages;
+  pipelineCreateInfo.pVertexInputState   = &vertexInputInfo;
+  pipelineCreateInfo.pInputAssemblyState = &inputAssembly;
+  pipelineCreateInfo.pViewportState      = &viewportState;
+  pipelineCreateInfo.pRasterizationState = &rasterizer;
+  pipelineCreateInfo.pMultisampleState   = &multisampling;
+  pipelineCreateInfo.pColorBlendState    = &colorBlending;
+  pipelineCreateInfo.pDynamicState       = &dynamicState;
+  pipelineCreateInfo.layout              = pipelineLayout;
+  pipelineCreateInfo.renderPass          = nullptr;
+  pipelineCreateInfo.pNext               = &pipelineRenderingCreateInfo;
+
+  if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &graphicsPipeline) != VK_SUCCESS){
+    return RET_CODE::RETURN_FAILED;
+  }
+
+  return RET_CODE::RETURN_SUCCES;
+}
+
+
 RET_CODE init_Vk() {
 
-  if (allocate_instance_vk() != RET_CODE::RETURN_SUCCES) {
+  if (allocate_instance_vk() != RET_CODE::RETURN_SUCCES)
     return RET_CODE::RETURN_FAILED;
-  }
 
-  if (allocate_surface_vk() != RET_CODE::RETURN_SUCCES) {
+  if (allocate_surface_vk() != RET_CODE::RETURN_SUCCES)
     return RET_CODE::RETURN_FAILED;
-  }
 
-  if (setup_physical_device_vk() != RET_CODE::RETURN_SUCCES) {
+  if (setup_physical_device_vk() != RET_CODE::RETURN_SUCCES)
     return RET_CODE::RETURN_FAILED;
-  }
-  if (setup_logic_device_vk() != RET_CODE::RETURN_SUCCES) {
+
+  if (setup_logic_device_vk() != RET_CODE::RETURN_SUCCES)
     return RET_CODE::RETURN_FAILED;
-  }
 
   if (setup_swapchain_vk() != RET_CODE::RETURN_SUCCES)
     return RET_CODE::RETURN_FAILED;
+
+  if (setup_graphic_pipeline_vk() != RET_CODE::RETURN_SUCCES) {
+    return RET_CODE::RETURN_FAILED;
+  }
+
 
   return RET_CODE::RETURN_SUCCES;
 }

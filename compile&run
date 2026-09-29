@@ -5,14 +5,20 @@ clang++ -o bin/main ./src/main.cpp -I ${VULKAN_SDK}/include/ -I include/ -std=c+
 if [ $? != 0 ]; then
   echo "FAILED TO COMPILE"
   exit -1
-else 
-
-
-  echo
-  echo
-  echo "|COMPILED|"
-  echo
-  echo
-  ./bin/main
-
 fi
+
+slangc src/shader.slang -target spirv -profile spirv_1_4 -emit-spirv-directly -fvk-use-entrypoint-name -entry vertMain -entry fragMain -o slang.spv 
+
+if [ $? != 0 ]; then
+  echo "FAILED TO COMPILE SHADERS"
+  exit -1
+fi
+
+echo
+echo
+echo "|COMPILED|"
+echo
+echo
+./bin/main
+
+
