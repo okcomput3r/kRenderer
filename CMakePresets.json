@@ -1,0 +1,35 @@
+{
+  "version": 3,
+
+
+
+  "configurePresets": [{
+    "name" : "default",
+    "binaryDir" : "build"
+  },
+  {
+    "name" : "debug-windows",
+    "binaryDir" : "build/debug-windows",
+    "generator" : "Visual Studio 17 2022"
+  },
+  {
+    "name" : "debug-linux",
+    "binaryDir" : "build/debug-linux",
+    "generator" : "Unix Makefiles"
+  }],
+
+
+
+  "buildPresets" : [{
+    "name" : "default",
+    "configurePresets" : "default"
+  },
+  {
+    "name" : "debug-windows",
+    "configurePresets" : "debug-windows"
+  },
+  {
+    "name" : "debug-linux",
+    "configurePresets" : "debug-linux"
+  }]
+}
