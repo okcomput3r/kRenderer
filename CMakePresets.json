@@ -1,35 +1,60 @@
 {
-  "version": 3,
+  "version": 10,
 
 
 
-  "configurePresets": [{
+  "configurePresets": [
+  {
     "name" : "default",
     "binaryDir" : "build"
   },
   {
+    "name" : "debug",
+    "inherits" : "default",
+    "cacheVariables" : {
+      "DEBUG" : {
+        "type"  : "BOOL",
+        "value" : "ON"
+      }
+    },
+    "environment" : {
+
+      "__DEBUG__" : "1"
+
+    }
+  },
+  {
     "name" : "debug-windows",
-    "binaryDir" : "build/debug-windows",
+    "inherits" : "debug",
     "generator" : "Visual Studio 17 2022"
   },
   {
     "name" : "debug-linux",
-    "binaryDir" : "build/debug-linux",
+    "inherits" : "debug",
     "generator" : "Unix Makefiles"
-  }],
+  
+  },
+  {
+    "name" : "debug-mac",
+    "inherits" : "debug"
+  }
+  ],
 
 
 
   "buildPresets" : [{
     "name" : "default",
-    "configurePresets" : "default"
+    "configurePreset" : "default",
+    "jobs" : 16
   },
   {
     "name" : "debug-windows",
-    "configurePresets" : "debug-windows"
+    "configurePreset" : "debug-windows",
+    "jobs" : 16
   },
   {
     "name" : "debug-linux",
-    "configurePresets" : "debug-linux"
+    "configurePreset" : "debug-linux",
+    "jobs" : 16
   }]
 }

@@ -6,18 +6,20 @@ set(PROJECT_NAME kilbyEngine)
 set(PROJECT_VERSION 0.1)
 
   # executables and runtime libraries are in the same folder
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR/$<CONFIGURATION>")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR/$<CONFIGURATION>")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 
+set(SHADERS_DIR   "${PROJECT_SOURCE_DIR}/shaders")
 set(EXTERN_DIR    "${PROJECT_SOURCE_DIR}/extern")
 set(INCLUDE_DIRS  "${PROJECT_SOURCE_DIR}/include/
-                   ${VULKAN_SDK}/include/")
+                   ${VULKAN_SDK}/include/
+                   ${SHADERS_DIR}")
 
 
 # PROJECT_NAME
 project(
   ${PROJECT_NAME}
-  ${PROJECT_VERSION}
+  VERSION ${PROJECT_VERSION}
   DESCRIPTION "Graphics engine"
   LANGUAGES CXX
 )
@@ -26,25 +28,25 @@ project(
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+add_executable(${PROJECT_NAME}
+  src/main.cpp
+)
+
 
 # Setting the R-PATH (runtime Path)
 # to be the same for executables and runtime libraries
 if(APPLE)
-  set_target_prperties(${PROJECT_NAME} PROPERTIES
+  set_target_properties(${PROJECT_NAME} PROPERTIES
                        INSTALL_RPATH "@executable_path;@loader_path"
                        BUILD_WITH_INSTALL_RPATH TRUE
                        MACOSX_RPATH TRUE)
 endif()
 
 if (UNIX AND NOT APPLE)
-  set_target_prperties(${PROJECT_NAME} PROPERTIES
+  set_target_properties(${PROJECT_NAME} PROPERTIES
                        INSTALL_RPATH "$ORIGIN"
                        BUILD_WITH_INSTALL_RPATH TRUE)
 endif()
 #
 
-
-add_executable(${PROJECT_NAME}
-  src/main.cpp
-)
 
