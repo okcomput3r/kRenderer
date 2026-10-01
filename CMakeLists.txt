@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.23)
 
-
 # SET GLOBAL VARIABLES
 
 set(PROJECT_NAME kilbyEngine)
@@ -15,6 +14,17 @@ set(EXTERN_DIR    "${CMAKE_SOURCE_DIR}/extern")
 set(INCLUDE_DIRS  "${CMAKE_E_DIR}/include/
                    $ENV{VULKAN_SDK}/include/
                    ${SHADERS_DIR}")
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # generates the compile_commands.json for clangd's lsp
+
+
+# SET ENVIROMENT CONSTANTS
+if (DEBUG)
+
+  ADD_DEFINITIONS(-D__DEBUG__)
+  ADD_DEFINITIONS(-DROOT_DIR="${CMAKE_SOURCE_DIR}")
+  ADD_DEFINITIONS(-DSHADERS_DIR="${SHADERS_DIR}")
+endif()
 
 
 # PROJECT_NAME

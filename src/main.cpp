@@ -1,8 +1,7 @@
+#include <vulkan/vulkan_core.h>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
-
-#include <stdio.h>
 
 #include <cstdint>
 #include <cstring>
@@ -14,8 +13,8 @@
 #include <vector>
 
 
-constexpr uint32_t WIDTH = 800;
-constexpr uint32_t HEIGHT = 600;
+constexpr uint32_t WIDTH = 600;
+constexpr uint32_t HEIGHT = 800;
 
 enum RET_CODE {
 
@@ -35,6 +34,7 @@ VkInstance instance;
 VkPhysicalDevice physicalDevice;
 VkDevice device;
 
+int graphicsFamilyIndex = -1;
 VkQueue graphicsQueue;
 
 VkApplicationInfo appInfo{};
@@ -58,6 +58,17 @@ VkShaderModule shaderModule;
 VkPipelineLayout pipelineLayout = nullptr;
 
 VkPipeline graphicsPipeline = nullptr;
+
+VkCommandPool commandPool = nullptr;
+VkCommandBuffer commandBuffer = nullptr;
+
+
+VkSemaphore presentCompleteSemaphore = nullptr;
+VkSemaphore renderFinishedSemaphore  = nullptr;
+
+VkFence  drawFence = nullptr;
+
+
 
 RET_CODE init_glfw_window() {
 
@@ -222,7 +233,6 @@ RET_CODE setup_logic_device_vk() {
                                            p_queueFamilies);
 
   VkBool32 result;
-  int graphicsFamilyIndex = -1;
   for (int i = 0; i < queueFamilyCount; ++i) {
     vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &result);
     if (p_queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT &&
@@ -469,9 +479,7 @@ RET_CODE setup_graphic_pipeline_vk(){
 
 
   // Will be used later at draw time TODO
-  
-  //VkViewport viewport {0.0f, 0.0f, static_cast<float>(surfaceExtent.width), static_cast<float>(surfaceExtent.height), 0.0f, 1.0f};
-  //VkRect2D scissor {VkOffset2D { 0, 0}, surfaceExtent};
+
 
   VkPipelineViewportStateCreateInfo viewportState {};
   viewportState.viewportCount = 1;
@@ -532,6 +540,143 @@ RET_CODE setup_graphic_pipeline_vk(){
 }
 
 
+RET_CODE setup_command_pool_vk(){
+
+  VkCommandPoolCreateInfo poolInfo {};
+  poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+  poolInfo.queueFamilyIndex = graphicsFamilyIndex;
+
+  vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool);
+
+  VkCommandBufferAllocateInfo allocInfo {};
+  allocInfo.commandPool        = commandPool;
+  allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  allocInfo.commandBufferCount = 1;
+
+  vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+
+
+  return RET_CODE::RETURN_SUCCES;
+}
+
+
+RET_CODE record_command_buffer(uint32_t imageIndex) {
+
+  VkCommandBufferBeginInfo beginInfo {};
+  vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+  // Transition imagen layout from undefined to eColorAttatchmentOptimal
+
+  VkImageMemoryBarrier2 barrier {};
+  barrier.srcStageMask        = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+  barrier.srcAccessMask       = {};
+  barrier.dstStageMask        = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+  barrier.dstAccessMask       = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+  barrier.oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
+  barrier.newLayout           = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.image               = swapChainImages[imageIndex];
+  barrier.subresourceRange = {
+      .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+      .baseMipLevel   = 0,
+      .levelCount     = 1,
+      .baseArrayLayer = 0,
+      .layerCount     = 1
+  };
+
+  VkDependencyInfo dependency_info        = {};
+  dependency_info.dependencyFlags         = {};
+  dependency_info.imageMemoryBarrierCount = 1;
+  dependency_info.pImageMemoryBarriers    = &barrier;
+
+  vkCmdPipelineBarrier2(commandBuffer, &dependency_info);
+
+
+  // Setup clear color (black background)
+
+  VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
+
+  VkRenderingAttachmentInfo attachmentInfo {};
+  attachmentInfo.imageView    = swapChainImageViews[imageIndex];
+  attachmentInfo.imageLayout  = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+  attachmentInfo.loadOp       = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  attachmentInfo.storeOp      = VK_ATTACHMENT_STORE_OP_STORE;
+  attachmentInfo.clearValue   = clearColor;
+
+
+  // Set rendering info & start recording
+
+  VkRenderingInfo renderingInfo = {};
+  renderingInfo.renderArea            = {.offset = {0,0}, .extent = surfaceExtent};
+  renderingInfo.layerCount            = 1;
+  renderingInfo.colorAttachmentCount  = 1;
+  renderingInfo.pColorAttachments     = &attachmentInfo;
+
+  vkCmdBeginRendering(commandBuffer, &renderingInfo);
+
+  // Bind GRAPHIC pipeline and set ViewPort and Scissors 
+  vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+
+  VkViewport viewPort = {0.0f, 0.0f, static_cast<float>(surfaceExtent.width), static_cast<float>(surfaceExtent.height), 0.0f, 1.0f};
+  vkCmdSetViewport(commandBuffer,0,1, &viewPort);
+ 
+  VkRect2D scissors = {VkOffset2D { 0, 0}, surfaceExtent};
+  vkCmdSetScissor(commandBuffer, 0, 1, &scissors);
+
+
+  // DRAW THE TRIANGLE GAD DAMN
+
+  vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
+
+
+  // End rendering and transition to PresentSrcKHR 
+  vkCmdEndRendering(commandBuffer);
+
+
+  barrier.srcStageMask        = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+  barrier.srcAccessMask       = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+  barrier.dstStageMask        = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
+  barrier.dstAccessMask       = {};
+  barrier.oldLayout           = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+  barrier.newLayout           = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.image               = swapChainImages[imageIndex];
+  barrier.subresourceRange = {
+      .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+      .baseMipLevel   = 0,
+      .levelCount     = 1,
+      .baseArrayLayer = 0,
+      .layerCount     = 1
+  };
+
+  dependency_info.dependencyFlags         = {};
+  dependency_info.imageMemoryBarrierCount = 1;
+  dependency_info.pImageMemoryBarriers    = &barrier;
+
+  vkCmdPipelineBarrier2(commandBuffer, &dependency_info);
+
+
+  // End commandBuffer
+  vkEndCommandBuffer(commandBuffer);
+
+  return RET_CODE::RETURN_SUCCES;
+}
+
+
+void create_sync_objects(){
+
+  VkSemaphoreCreateInfo semaphoreCreateInfo {};
+  vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &presentCompleteSemaphore);
+  vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &renderFinishedSemaphore);
+
+  VkFenceCreateInfo fenceCreateInfo = { .flags =  VK_FENCE_CREATE_SIGNALED_BIT };
+  vkCreateFence(device, &fenceCreateInfo, nullptr, &drawFence);
+
+}
+
 RET_CODE init_Vk() {
 
   if (allocate_instance_vk() != RET_CODE::RETURN_SUCCES)
@@ -553,14 +698,65 @@ RET_CODE init_Vk() {
     return RET_CODE::RETURN_FAILED;
   }
 
+  setup_command_pool_vk();
+  create_sync_objects();
 
   return RET_CODE::RETURN_SUCCES;
 }
+
+
+RET_CODE draw_frame_vk(){
+
+  VkResult result = vkWaitForFences(device, 1, &drawFence, VK_TRUE, UINT64_MAX);
+  if (result != VK_SUCCESS){
+    return RET_CODE::RETURN_FAILED;
+  }
+  vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, presentCompleteSemaphore, nullptr, &imageCount);
+
+  record_command_buffer(imageCount);
+
+
+  VkPipelineStageFlags waitDestinationStageMask = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+
+  VkSubmitInfo submitInfo {};
+  submitInfo.waitSemaphoreCount     = 1;
+  submitInfo.pWaitSemaphores        = &presentCompleteSemaphore;
+  submitInfo.pWaitDstStageMask      = &waitDestinationStageMask;
+  submitInfo.commandBufferCount     = 1;
+  submitInfo.pCommandBuffers        = &commandBuffer;
+  submitInfo.signalSemaphoreCount   = 1;
+  submitInfo.pSignalSemaphores      = &renderFinishedSemaphore;
+
+  vkQueueSubmit(graphicsQueue, 1, &submitInfo, drawFence);
+
+
+
+  VkPresentInfoKHR presentInfoKHR {};
+  presentInfoKHR.waitSemaphoreCount = 1;
+  presentInfoKHR.pWaitSemaphores    = &renderFinishedSemaphore;
+  presentInfoKHR.swapchainCount     = 1;
+  presentInfoKHR.pSwapchains        = &swapchain;
+  presentInfoKHR.pImageIndices      = &imageCount;
+
+  presentInfoKHR.pResults           = nullptr;
+
+  vkQueuePresentKHR(graphicsQueue, &presentInfoKHR);
+
+
+
+  return RET_CODE::RETURN_SUCCES;
+}
+
+
+
+
+
 
 void entrypoint_mainloop_Vk() {
 
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
+    draw_frame_vk();
   }
 }
 

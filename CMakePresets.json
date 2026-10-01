@@ -6,7 +6,10 @@
   "configurePresets": [
   {
     "name" : "default",
-    "binaryDir" : "build"
+    "binaryDir" : "build",
+    "environment" : {
+
+    }
   },
   {
     "name" : "debug",
