@@ -48,6 +48,11 @@
     "jobs" : 16
   },
   {
+    "name" : "debug",
+    "configurePreset" : "debug",
+    "jobs" : 16
+  },
+  {
     "name" : "debug-windows",
     "configurePreset" : "debug-windows",
     "jobs" : 16
