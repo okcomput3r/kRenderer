@@ -9,12 +9,14 @@ set(PROJECT_VERSION 0.1)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 
-set(SHADERS_DIR   "${CMAKE_SOURCE_DIR}/shaders")
-set(EXTERN_DIR    "${CMAKE_SOURCE_DIR}/extern")
-set(INCLUDE_DIRS  "${CMAKE_E_DIR}/include/
-                   $ENV{VULKAN_SDK}/include/
-                   ${SHADERS_DIR}")
 
+set(SHADERS_DIR     "${CMAKE_SOURCE_DIR}/shaders")
+set(EXTERN_DIR      "${CMAKE_SOURCE_DIR}/extern")
+
+file(GLOB_RECURSE INCLUDE_HEADERS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/include/*.hpp" "${CMAKE_SOURCE_DIR}/include/*.h")
+file(GLOB_RECURSE INCLUDE_SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/include/*.cpp" "${CMAKE_SOURCE_DIR}/include/*.c")
+
+message (STATUS "include headers ${INCLUDE_HEADERS}")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # generates the compile_commands.json for clangd's lsp
 
 
@@ -24,6 +26,8 @@ if (DEBUG)
   ADD_DEFINITIONS(-D__DEBUG__)
   ADD_DEFINITIONS(-DROOT_DIR="${CMAKE_SOURCE_DIR}")
   ADD_DEFINITIONS(-DSHADERS_DIR="${SHADERS_DIR}")
+
+  set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 endif()
 
 
@@ -39,9 +43,16 @@ project(
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+
 # CREATE EXECUTABLE
 add_executable(${PROJECT_NAME}
   src/main.cpp
+  ${INCLUDE_HEADERS}
+  ${INCLUDE_SOURCES}
+)
+
+target_include_directories(${PROJECT_NAME} PRIVATE
+  "${CMAKE_SOURCE_DIR}/include"
 )
 
 # Setting the R-PATH (runtime Path)
@@ -64,6 +75,10 @@ endif()
 
 # LINK LIBRARIES
 
+# project's include directory
+
+
+# vulkan and glfw
 find_package(Vulkan REQUIRED)
 add_subdirectory(${EXTERN_DIR}/glfw)
 

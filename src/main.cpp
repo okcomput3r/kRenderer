@@ -1,7 +1,10 @@
-#include <vulkan/vulkan_core.h>
 #define GLFW_INCLUDE_VULKAN
+#include <vulkan/vulkan_core.h>
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
+
+#include <utils/logs.hpp>
+#include <memory.h>
 
 #include <cstdint>
 #include <cstring>
