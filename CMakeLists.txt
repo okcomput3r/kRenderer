@@ -51,9 +51,6 @@ add_executable(${PROJECT_NAME}
   ${INCLUDE_SOURCES}
 )
 
-target_include_directories(${PROJECT_NAME} PRIVATE
-  "${CMAKE_SOURCE_DIR}/include"
-)
 
 # Setting the R-PATH (runtime Path)
 # to be the same for executables and runtime libraries
@@ -77,6 +74,9 @@ endif()
 
 # project's include directory
 
+target_include_directories(${PROJECT_NAME} PRIVATE
+  "${CMAKE_SOURCE_DIR}/include"
+)
 
 # vulkan and glfw
 find_package(Vulkan REQUIRED)

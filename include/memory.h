@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <iostream>
 #include <utility>
+#define _OK_LOGS_IMPL
 #include <utils/logs.hpp>
 
 namespace Memory::Containers {

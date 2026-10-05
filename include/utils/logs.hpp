@@ -91,7 +91,7 @@ void _soft_assert(int line, const char* msg);
 // IMPLEMENTATION
 
 //REMOVE WHEN DONE
-#define OK_LOGS_IMPL
+
 #ifdef OK_LOGS_IMPL
 
 void Log::Assert::_assert_paranoid(int line, const char* msg) {
