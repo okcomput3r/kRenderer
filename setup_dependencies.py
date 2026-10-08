@@ -21,6 +21,8 @@ def check_os():
 
     return system
 
+
+
 def install_vulkan_dependencies():
     print ('[] Installing Vulkan dependencies')
 
@@ -35,6 +37,8 @@ def install_vulkan_dependencies():
     print ('[] Vulkan dependencies succesfully installed')
 
     return
+
+
 
 def install_vulkan_dependencies_win32():
     print('[] Installing windows dependencies')
@@ -79,6 +83,8 @@ def install_vulkan_dependencies_win32():
 
     return
 
+
+
 def install_vulkan_dependencies_linux():
     print('[] Installing linux dependencies')
 
@@ -102,13 +108,15 @@ def install_vulkan_dependencies_linux():
 
     print ('[] Dependencies installed succesfully')
 
-
     return
 
-# TODO #
+
 
 def install_vulkan_dependencies_apple():
+    print('[] Implementation on apple enviroments not supported yet')
     return
+
+
 
 def check_vulkan_sdk():
 
@@ -119,15 +127,42 @@ def check_vulkan_sdk():
     install_vulkan_sdk();
     return
 
+
+
 def install_vulkan_sdk():
     print('[] Vulkan SDK not detected. Prepping instalation')
 
     system = check_os()
 
-    # TODO #
+    if 'Linux' in system:
+        install_vulkan_sdk_linux()
+    if 'win32' in system:
+        install_vulkan_sdk_win32()
+    if 'darwin' in system:
+        install_vulkan_sdk_apple()
 
     print('[] Vulkan SDK installed')
     return
+
+
+
+def install_vulkan_sdk_win32():
+    print ('[] Installing sdk on windows')
+    install_dir = Path(os.path.abspath(os.path.dirname(sys.argv[0]))) / 'extern' / 'vulkan_sdk'
+
+    return
+
+
+
+def install_vulkan_sdk_linux():
+    return
+
+
+
+def install_vulkan_sdk_apple():
+    print('[] Implementation on apple enviroments not supported yet')
+    return
+
 
 
 
@@ -135,3 +170,4 @@ def install_vulkan_sdk():
 if __name__ == "__main__" :
 
     install_vulkan_dependencies()
+    install_vulkan_sdk()

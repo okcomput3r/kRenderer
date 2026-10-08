@@ -6,10 +6,10 @@
 #define OK_DEBUG
 #endif // DEBUG
 
-#ifdef VULKAN_SDK
-  std::cout << "vulkan sdk detected" << std::endl;
-
+#ifdef K_VULKAN
+  std::cout << "Enabling vulkan functionality" << std::endl;
 #endif
+
 namespace Log::Warning {
 
 

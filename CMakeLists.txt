@@ -90,25 +90,25 @@ target_link_libraries(${PROJECT_NAME} glfw)
 
 
 # COMPILE SHADERS TODO
+#
+#function (add_slang_shader_target TARGET)
+#  cmake_parse_arguments ("SHADER" "" "" "SOURCES" ${ARGN})
+#
+#  set (ENTRY_POINTS -entry vertMain -entry fragMain)
+#  add_custom_command (
+#          OUTPUT ${SHADERS_BIN_DIR}
+#          COMMAND ${CMAKE_COMMAND} -E make_directory(${SHADERS_BIN_DIR})
+#  )
+#  add_custom_command (
+#    OUTPUT  ${SHADERS_BIN_DIR}/slang.spv
+#          COMMAND ${SLANGC_EXECUTABLE} ${SHADER_SOURCES} -target spirv -profile spirv_1_4 -emit-spirv-directly -fvk-use-entrypoint-name ${ENTRY_POINTS} -o slang.spv
+#          WORKING_DIRECTORY ${SHADERS_BIN_DIR}
+#          DEPENDS ${SHADERS_BIN_DIR} ${SHADER_SOURCES}
+#          COMMENT "Compiling Slang Shaders"
+#          VERBATIM
+#  )
+#  add_custom_target (${TARGET} DEPENDS ${SHADERS_BIN_DIR}/slang.spv)
+#endfunction()
 
-function (add_slang_shader_target TARGET)
-  cmake_parse_arguments ("SHADER" "" "" "SOURCES" ${ARGN})
-
-  set (ENTRY_POINTS -entry vertMain -entry fragMain)
-  add_custom_command (
-          OUTPUT ${SHADERS_BIN_DIR}
-          COMMAND ${CMAKE_COMMAND} -E make_directory(${SHADERS_BIN_DIR})
-  )
-  add_custom_command (
-    OUTPUT  ${SHADERS_BIN_DIR}/slang.spv
-          COMMAND ${SLANGC_EXECUTABLE} ${SHADER_SOURCES} -target spirv -profile spirv_1_4 -emit-spirv-directly -fvk-use-entrypoint-name ${ENTRY_POINTS} -o slang.spv
-          WORKING_DIRECTORY ${SHADERS_BIN_DIR}
-          DEPENDS ${SHADERS_BIN_DIR} ${SHADER_SOURCES}
-          COMMENT "Compiling Slang Shaders"
-          VERBATIM
-  )
-  add_custom_target (${TARGET} DEPENDS ${SHADERS_BIN_DIR}/slang.spv)
-endfunction()
-
-add_slang_shader_target( shaders SOURCES ${SHADERS_SOURCE_DIR})
-add_dependencies(${PROJECT_NAME} shaders)
+#add_slang_shader_target( shaders SOURCES ${SHADERS_SOURCE_DIR})
+#add_dependencies(${PROJECT_NAME} shaders)
