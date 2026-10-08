@@ -1,7 +1,8 @@
 cosasAHacer
 
 build/
-Vulkan-Tutorial
+Vulkan-Tutorial/
+extern/Vulkan-Tutorial
 extern/vcpkg
 
 CMakeLists.txt.user
