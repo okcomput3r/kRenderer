@@ -9,14 +9,15 @@ set(PROJECT_VERSION 0.1)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 
+set(SLANGC_EXECUTABLE        "${VULKAN_SDK}/bin/slangc")
+set(SHADERS_SOURCE_DIR       "${CMAKE_SOURCE_DIR}/src/shaders")
+set(SHADERS_BIN_DIR          "${CMAKE_BINARY_DIR}/shaders")
+set(EXTERN_DIR               "${CMAKE_SOURCE_DIR}/extern")
 
-set(SHADERS_DIR     "${CMAKE_SOURCE_DIR}/shaders")
-set(EXTERN_DIR      "${CMAKE_SOURCE_DIR}/extern")
 
 file(GLOB_RECURSE INCLUDE_HEADERS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/include/*.hpp" "${CMAKE_SOURCE_DIR}/include/*.h")
 file(GLOB_RECURSE INCLUDE_SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/include/*.cpp" "${CMAKE_SOURCE_DIR}/include/*.c")
 
-message (STATUS "include headers ${INCLUDE_HEADERS}")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # generates the compile_commands.json for clangd's lsp
 
 
@@ -25,7 +26,9 @@ if (DEBUG)
 
   ADD_DEFINITIONS(-D__DEBUG__)
   ADD_DEFINITIONS(-DROOT_DIR="${CMAKE_SOURCE_DIR}")
-  ADD_DEFINITIONS(-DSHADERS_DIR="${SHADERS_DIR}")
+  ADD_DEFINITIONS(-DSHADERS_SOURCE_DIR="${SHADERS_SOURCE_DIR}")
+  ADD_DEFINITIONS(-DSHADERS_BIN_DIR="${SHADERS_BIN_DIR}")
+ 
 
   set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 endif()
@@ -85,3 +88,27 @@ add_subdirectory(${EXTERN_DIR}/glfw)
 target_link_libraries(${PROJECT_NAME} Vulkan::Vulkan)
 target_link_libraries(${PROJECT_NAME} glfw)
 
+
+# COMPILE SHADERS TODO
+
+function (add_slang_shader_target TARGET)
+  cmake_parse_arguments ("SHADER" "" "" "SOURCES" ${ARGN})
+
+  set (ENTRY_POINTS -entry vertMain -entry fragMain)
+  add_custom_command (
+          OUTPUT ${SHADERS_BIN_DIR}
+          COMMAND ${CMAKE_COMMAND} -E make_directory(${SHADERS_BIN_DIR})
+  )
+  add_custom_command (
+    OUTPUT  ${SHADERS_BIN_DIR}/slang.spv
+          COMMAND ${SLANGC_EXECUTABLE} ${SHADER_SOURCES} -target spirv -profile spirv_1_4 -emit-spirv-directly -fvk-use-entrypoint-name ${ENTRY_POINTS} -o slang.spv
+          WORKING_DIRECTORY ${SHADERS_BIN_DIR}
+          DEPENDS ${SHADERS_BIN_DIR} ${SHADER_SOURCES}
+          COMMENT "Compiling Slang Shaders"
+          VERBATIM
+  )
+  add_custom_target (${TARGET} DEPENDS ${SHADERS_BIN_DIR}/slang.spv)
+endfunction()
+
+add_slang_shader_target( shaders SOURCES ${SHADERS_SOURCE_DIR})
+add_dependencies(${PROJECT_NAME} shaders)
