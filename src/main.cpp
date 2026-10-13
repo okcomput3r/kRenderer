@@ -10,6 +10,8 @@
 #include <cstring>
 #include <iostream>
 
+#include <renderer/renderer.h>
+
 // change later
 #include <fstream>
 #include <vector>
@@ -24,6 +26,8 @@ enum RET_CODE {
 
 };
 
+
+// logs.hpp
 const char *requiredDeviceExtension[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 uint32_t requiredDeviceExtensionCount = 1;
 
