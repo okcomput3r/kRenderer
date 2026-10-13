@@ -48,8 +48,6 @@ typedef s_ViewPort ViewPort;
 struct s_kRendererCore_vk;
 typedef s_kRendererCore_vk kRendererCore_vk;
 
-
-
 // Functions
 
 void init_module_renderer();
@@ -60,6 +58,7 @@ void entrypoint_render_frame();
 
 void load_renderer_configuration(char* configPath, RendererDescriptor_vk& renderConfig); // TODO
 RendererDescriptor_vk& get_renderer_configuration(); // TODO
+
 
 
 #endif /* END of K_RENDERER_HEADER */

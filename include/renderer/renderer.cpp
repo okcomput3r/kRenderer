@@ -65,6 +65,11 @@ struct s_kRendererCore_vk{
 
 };
 
+// definition of functions
+void instanciate_renderer_core_vk(kRendererCore_vk* renderer);
+kRendererCore_vk* get_renderer_core_instance_vk();
+
+
 
 static kRendererCore_vk* s_renderer = nullptr;
 
