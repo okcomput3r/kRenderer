@@ -10,7 +10,7 @@
 #include <cstring>
 #include <iostream>
 
-#include <renderer/renderer.h>
+#include <renderer/renderer.hpp>
 
 // change later
 #include <fstream>
@@ -765,6 +765,9 @@ void cleanup_Vk() {
 }
 
 int main(int argc, char **argv) {
+
+  renderer_info& renderer = renderer_info::getInstance();
+
 
   init_glfw_window();
 
