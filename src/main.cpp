@@ -3,8 +3,11 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
-#include <memory.h>
-#include <utils/logs.hpp>
+
+//#include <memory/memory.hpp>
+
+//#define _OK_LOGS_IMPL
+//#include <utils/logs.hpp>
 
 #include <cstdint>
 #include <cstring>
@@ -766,8 +769,10 @@ void cleanup_Vk() {
 
 int main(int argc, char **argv) {
 
-  renderer_info& renderer = renderer_info::getInstance();
+  //renderer_info& renderer = renderer_info::getInstance();
+  //assert_paranoid(1==1, "wowkShocker");
 
+  init_module_renderer();
 
   init_glfw_window();
 

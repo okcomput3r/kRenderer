@@ -1,4 +1,6 @@
 cosasAHacer
+out/
+logs/
 
 build/
 Vulkan-Tutorial/

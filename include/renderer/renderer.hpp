@@ -1,69 +1,65 @@
+#ifndef K_RENDERER_HEADER
+#define K_RENDERER_HEADER
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
-#include <memory/memory.h>
-#include <utils/logs.hpp>
+
+#include <vector>
+//#include <memory/memory.hpp>
+//#include <utils/logs.hpp>
 
 #include <cstdint>
 
-struct renderer_info{
 
-  VkInstance   instance {nullptr};
-
-  // window management ( surface, surface extent, surface format )
-  GLFWwindow*  window   {nullptr};
-  VkSurfaceKHR surface  {nullptr};
-
-  VkExtent2D surfaceExtent;
-
-  uint32_t surfaceFormatIndex {UINT32_MAX};
-  Memory::Containers::vector<VkSurfaceFormatKHR> surfaceFormats {};
-
-  // physical & logicalDevices
-
-  Memory::Containers::vector<VkPhysicalDevice> physicalDevices {};
-  VkPhysicalDevice* p_selectedPhysicalDevice;
-  VkDevice          logicalDevice  {nullptr};
-
-  // TODO Wrap into struct like "renderer_graphic_queue"
-  uint32_t graphicsFamilyIndex {UINT32_MAX};
-  VkQueue graphicQueue;
-
-  VkApplicationInfo appInfo {};
-  VkInstanceCreateInfo instanceCreateInfo {};
-
-  VkSwapchainKHR swapchain {nullptr};
-
-  // vk Images
-  uint32_t imageCount {UINT32_MAX};
-  uint32_t desiredImageCount {};
-
-  Memory::Containers::vector<VkImage>     swapChainImages { };
-  Memory::Containers::vector<VkImageView> swapChainImageViews { };
-
-  renderer_info(const renderer_info&)  = delete;
-  renderer_info(const renderer_info&&) = delete;
-  renderer_info& operator=(const renderer_info&) = delete;
-
-  static renderer_info& getInstance(){
-    static renderer_info obj;
-    return obj;
-  }
-
-
-
-  private:
-
-    renderer_info() {}
+/**
+ *  TODO
+ *  render config es una estructura de datos que se crea
+ *  a base de un documento .json que especifica la configuración de 
+ *  el renderizador
+ *
+ *
+ *
+ */
+struct s_RedererDescriptor{
 
 };
-typedef renderer_info renderer_info;
+typedef s_RedererDescriptor RendererDescriptor_vk;
 
 
-struct viewPort {
+struct s_ViewPort {
   uint32_t width;
   uint32_t height;
 
 };
+typedef s_ViewPort ViewPort;
+
+
+/**
+ * TODO
+ * El core del renderizador contiene todas las estructuras de datos necesarias
+ * para que funcione (?)
+ *
+ * obscure implementation
+ * declaration on renderer.cpp
+ */
+struct s_kRendererCore_vk;
+typedef s_kRendererCore_vk kRendererCore_vk;
+
+
+
+// Functions
+
+void init_module_renderer();
+void init_module_renderer(RendererDescriptor_vk& renderConfig); // TODO implementation of rendererDescriptor
+void cleanup_module_renderer();
+
+void entrypoint_render_frame();
+
+void load_renderer_configuration(char* configPath, RendererDescriptor_vk& renderConfig); // TODO
+RendererDescriptor_vk& get_renderer_configuration(); // TODO
+
+
+#endif /* END of K_RENDERER_HEADER */

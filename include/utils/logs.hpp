@@ -1,6 +1,7 @@
 #ifndef OK_LOGS_H
 #define OK_LOGS_H
 
+#include <memory/memory.hpp>
 
 #ifdef __DEBUG__
 #define OK_DEBUG
@@ -17,6 +18,12 @@ namespace Log::Warning {
 
 namespace Log::Error {
 
+  // TODO push the last error that happened into the stack so if
+  // a call failed the user can retrieve it
+
+  //Memory::Arenas::stack_arena error_stack {};
+
+
 }
 
 namespace Log::Assert {
@@ -31,7 +38,6 @@ namespace Log::Assert {
       Log::Assert::_assert_paranoid(__LINE__, MSG);      \
     }                                                    \
   } while (0)
-
 
 
 
