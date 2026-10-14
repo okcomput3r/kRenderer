@@ -30,7 +30,6 @@ enum RET_CODE {
 };
 
 
-// logs.hpp
 const char *requiredDeviceExtension[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 uint32_t requiredDeviceExtensionCount = 1;
 
@@ -772,8 +771,10 @@ int main(int argc, char **argv) {
   //renderer_info& renderer = renderer_info::getInstance();
   //assert_paranoid(1==1, "wowkShocker");
 
+  std::cout << "hola" << std::endl;
   init_module_renderer();
 
+  /*
   init_glfw_window();
 
   std::cout << "starting vulkan" << std::endl;
@@ -785,6 +786,6 @@ int main(int argc, char **argv) {
 
   entrypoint_mainloop_Vk();
   cleanup_Vk();
-
+  */
   return 0;
 }

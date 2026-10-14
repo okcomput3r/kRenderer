@@ -13,6 +13,9 @@ static constexpr uint32_t s_defaultWindowSize_y {1080};
 
 static constexpr uint32_t s_maxImageCount {3};
 
+static const char* s_requiredDeviceExtensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+static const uint32_t s_requiredDeviceExtensionCount = 1;
+
 #include <vector>
 //#include <memory/memory.hpp>
 //#include <utils/logs.hpp>
