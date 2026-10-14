@@ -1,11 +1,17 @@
 #ifndef K_RENDERER_HEADER
 #define K_RENDERER_HEADER
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
+// define max value of uint32_t as an unreachable/invalid value for debug checking
+#define UINT32_INVALID_VALUE UINT32_MAX
+
+// default values for window dimensions
+static constexpr uint32_t s_defaultWindowSize_x {1920};
+static constexpr uint32_t s_defaultWindowSize_y {1080};
+
+static constexpr uint32_t s_maxImageCount {3};
 
 #include <vector>
 //#include <memory/memory.hpp>
@@ -25,17 +31,9 @@
  */
 struct s_RedererDescriptor{
 
-};
-typedef s_RedererDescriptor RendererDescriptor_vk;
-
-
-struct s_ViewPort {
-  uint32_t width;
-  uint32_t height;
 
 };
-typedef s_ViewPort ViewPort;
-
+typedef s_RedererDescriptor RendererDescriptor;
 
 /**
  * TODO
@@ -51,13 +49,15 @@ typedef s_kRendererCore_vk kRendererCore_vk;
 // Functions
 
 void init_module_renderer();
-void init_module_renderer(RendererDescriptor_vk& renderConfig); // TODO implementation of rendererDescriptor
+void init_module_renderer(RendererDescriptor& renderConfig); // TODO implementation of rendererDescriptor
 void cleanup_module_renderer();
 
 void entrypoint_render_frame();
 
-void load_renderer_configuration(char* configPath, RendererDescriptor_vk& renderConfig); // TODO
-RendererDescriptor_vk& get_renderer_configuration(); // TODO
+// igual pasar a la interfaz privada 
+void load_renderer_configuration(char* configPath, RendererDescriptor& renderConfig); // TODO
+void parse_renderer_configuration(char* rawText, RendererDescriptor& renderConfig);   // TODO
+RendererDescriptor& get_renderer_configuration(); // TODO
 
 
 

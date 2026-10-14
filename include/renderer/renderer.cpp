@@ -1,6 +1,122 @@
 #include <renderer/renderer.hpp>
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
+
+// Static singleton renderer
+static kRendererCore_vk* s_renderer = nullptr;
 
 
+/**
+ * s_MachineContext_vk
+ * 
+ *
+ */
+struct s_MachineContext_vk{
+
+  VkPhysicalDevice*   p_physicalDevices {nullptr}; // array of physical devices availables
+  VkSurfaceFormatKHR* p_surfaceFormats  {nullptr}; // array of surface formats availables
+  VkQueueFamilyProperties*    p_queueFamilies {nullptr}; // array of queue families availables
+
+};
+typedef s_MachineContext_vk MachineContext_vk;
+
+
+
+/**
+ * s_ViewPort_vk
+ *
+ *
+ *
+ */
+struct s_ViewPort_vk {
+
+  uint32_t width  {s_defaultWindowSize_x};
+  uint32_t height {s_defaultWindowSize_y};
+
+
+  VkSurfaceFormatKHR* p_surfaceFormat {nullptr};
+  VkSurfaceKHR        p_surface       {nullptr};
+  VkExtent2D surfaceExtent;
+
+};
+typedef s_ViewPort_vk ViewPort_vk;
+
+
+/***
+ *  s_Swapchain_vk
+ *
+ *
+ *
+ */
+struct s_Swapchain_vk {
+
+  VkImage*     p_swapChainImages     {nullptr};
+  VkImageView* p_swapChainImageViews {nullptr};
+
+  VkSwapchainKHR swapchain {nullptr};
+
+  uint32_t imageCount {UINT32_INVALID_VALUE};
+};
+typedef s_Swapchain_vk Swapchain_vk;
+
+
+struct s_Pipeline_vk {
+
+  VkPipelineLayout pipelineLayout {nullptr};
+  VkPipeline graphicsPipeline     {nullptr};
+
+};
+typedef s_Pipeline_vk Pipeline_vk;
+
+
+/**
+ *  s_RendererContext_vk
+ *
+ *
+ *
+ */
+struct s_RendererContext_vk{
+
+  VkApplicationInfo appInfo {};
+
+  GLFWwindow* window  {nullptr};
+  ViewPort_vk viewPort;
+
+  VkInstanceCreateInfo instanceCreateInfo {};
+  VkInstance instance {nullptr};
+
+  VkPhysicalDevice* p_physicalDevice {nullptr};
+  VkDevice logicalDevice {};
+
+  uint32_t graphicsFamilyIndex {UINT32_INVALID_VALUE};
+  VkQueue graphicQueue;
+
+};
+typedef s_RendererContext_vk RendererContext_vk;
+
+
+
+/**
+ *  s_concurrence_vk
+ *
+ *
+ *
+ * TODO
+ *  - move to its own header file
+ */
+struct s_concurrence_vk{
+
+  VkCommandPool   commandPool {nullptr};
+  VkCommandBuffer commandBuffer {nullptr};
+
+  // TODO wrap semaphores into its own memory/concurrency header if needed
+  VkSemaphore presentCompleteSemaphore {nullptr}, renderFinishedSemaphore {nullptr};
+  VkFence drawFence {nullptr};
+
+};
+typedef s_concurrence_vk Concurrence_vk;
 
 
 
@@ -17,61 +133,38 @@
  */
 struct s_kRendererCore_vk{
 
-  VkInstance   instance {nullptr};
+  RendererContext_vk context;
+ 
+  Swapchain_vk swapchain;
 
-  // window management ( surface, surface extent, surface format )
-  GLFWwindow*  window   {nullptr};
-  VkSurfaceKHR surface  {nullptr};
+  Pipeline_vk pipeline;
 
-  VkExtent2D surfaceExtent;
-  uint32_t surfaceFormatIndex {UINT32_MAX};
-  std::vector<VkSurfaceFormatKHR> surfaceFormats {};
-
-  // physical & logicalDevices
-
-  std::vector<VkPhysicalDevice> physicalDevices {};
-  VkPhysicalDevice* p_selectedPhysicalDevice;
-  VkDevice          logicalDevice  {nullptr};
-
-  // TODO Wrap into struct like "renderer_graphic_queue"
-  uint32_t graphicsFamilyIndex {UINT32_MAX};
-  VkQueue graphicQueue;
-
-  VkApplicationInfo appInfo {};
-  VkInstanceCreateInfo instanceCreateInfo {};
-
-  VkSwapchainKHR swapchain {nullptr};
-
-  // vk Images
-  uint32_t imageCount {UINT32_MAX};
-  uint32_t desiredImageCount {};
-
-  std::vector<VkImage>     swapChainImages {};
-  std::vector<VkImageView> swapChainImageViews {};
-
-  // shader Modules
+  // TODO put shader Modules on other struct (ej.pipeline or new)
   VkShaderModule shaderModule;
 
-  // TODO in the future, have multiple pipelines (if posible)
-  VkPipelineLayout pipelineLayout {nullptr};
-  VkPipeline graphicsPipeline     {nullptr};
-
-  VkCommandPool   commandPool {nullptr};
-  VkCommandBuffer commandBuffer {nullptr};
-
-  // TODO wrap semaphores into its own memory/concurrency header if needed
-  VkSemaphore presentCompleteSemaphore {nullptr}, renderFinishedSemaphore {nullptr};
-  VkFence drawFence {nullptr};
-
+  RendererDescriptor descriptor;
 };
 
-// definition of functions
+// Definition of private functions
+
 void instanciate_renderer_core_vk(kRendererCore_vk* renderer);
 kRendererCore_vk* get_renderer_core_instance_vk();
 
+void get_GLFW_window(kRendererCore_vk* renderer);
+void allocate_instance_vk(kRendererCore_vk* renderer);
+void setup_pyshical_device_vk(kRendererCore_vk* renderer);
+uint32_t choose_physical_device_vk(VkPhysicalDevice* physicalDevices);
+void setup_logic_device_vk(kRendererCore_vk* renderer);
+void setup_swapchain_vk(kRendererCore_vk* renderer);
+void setup_graphic_pipeline_vk(kRendererCore_vk* renderer);
+void setup_default_graphic_pipeline_vk(kRendererCore_vk* renderer); // without configutation
+
+void start_log_entry(char* path);
 
 
-static kRendererCore_vk* s_renderer = nullptr;
+
+
+// implementation
 
 
 void instanciate_renderer_core_vk(kRendererCore_vk *renderer)
@@ -101,19 +194,31 @@ void get_GLFW_window(kRendererCore_vk* renderer){
 
 }
 
-void allocate_instance_vk(kRendererCore_vk* renderer){}
+void allocate_instance_vk(kRendererCore_vk* renderer){
 
-void setup_pyshical_device_vk(kRendererCore_vk* renderer){}
+}
+
+void setup_pyshical_device_vk(kRendererCore_vk* renderer){
+
+}
 
 uint32_t choose_physical_device_vk(VkPhysicalDevice* physicalDevices){ return -1;}
 
-void setup_logic_device_vk(kRendererCore_vk* renderer) {}
+void setup_logic_device_vk(kRendererCore_vk* renderer) {
 
-void setup_swapchain_vk(kRendererCore_vk* renderer) {}
+}
 
-void setup_graphic_pipeline_vk(kRendererCore_vk* renderer) {}
+void setup_swapchain_vk(kRendererCore_vk* renderer) {
 
-void start_log_entry(char* path);
+}
+
+void setup_graphic_pipeline_vk(kRendererCore_vk* renderer) {
+
+}
+
+void start_log_entry(char* path){
+
+}
 
 
 
