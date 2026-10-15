@@ -20,9 +20,16 @@
   } while (0)
 
 #define trace(MSG) std::cout<<MSG<<std::endl;
+
 // Logs dont print to screen, unlike warning and error, wich do both screen and file
-// Logs::trace()
+// Logs::trace()   // activate under flag DEBUG
 // Logs::Verbose() // activate under flag VERBOSE
+//
+// Assert::assert() // activate under flag DEBUG
+// Assert::assert_paranoid() // activate under flag PARANOID
+//
+// Error::panic()
+// Error::abort() // panic without condition statement, only msg
 
 // ARENA MOVE OTHER PLACE
 static constexpr size_t s_maxArenaSize {UINT64_MAX};
