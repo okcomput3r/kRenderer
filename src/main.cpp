@@ -12,10 +12,9 @@
 #include <renderer/renderer.hpp>
 
 void entrypoint_mainloop_Vk() {
-
-  while (!glfwWindowShouldClose(retrieve_renderer_window())) {
+  GLFWwindow* window = retrieve_renderer_window();
+  while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
-    //draw_frame_vk();
     entrypoint_render_frame();
   }
 }

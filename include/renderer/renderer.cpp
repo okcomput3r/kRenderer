@@ -143,10 +143,6 @@ typedef s_StackArena StackArena;
 
 
 
-// Static singleton renderer
-static kRendererCore_vk* s_renderer = nullptr;
-static StackArena s_rendererArena {100000}; // 100.000 bytes
-
 /**
  * s_MachineContext_vk
  * 
@@ -279,8 +275,6 @@ struct s_RendererContext_vk{
 };
 typedef s_RendererContext_vk RendererContext_vk;
 
-
-
 /**
  *  s_concurrence_vk
  *
@@ -325,6 +319,12 @@ struct s_kRendererCore_vk{
 
 
 };
+typedef s_kRendererCore_vk kRendererCore_vk;
+
+
+// Static singleton renderer
+static kRendererCore_vk* s_renderer = nullptr;
+static StackArena s_rendererArena {100000}; // 100.000 bytes
 
 // Definition of private functions
 

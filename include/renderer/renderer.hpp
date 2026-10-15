@@ -35,17 +35,6 @@ static constexpr uint32_t s_requiredDeviceExtensionCount = 1;
 struct s_RedererDescriptor;
 typedef s_RedererDescriptor RendererDescriptor;
 
-/**
- * TODO
- * El core del renderizador contiene todas las estructuras de datos necesarias
- * para que funcione (?)
- *
- * obscure implementation
- * declaration on renderer.cpp
- */
-struct s_kRendererCore_vk;
-typedef s_kRendererCore_vk kRendererCore_vk;
-
 // Functions
 
 void init_module_renderer();
