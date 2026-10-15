@@ -20,6 +20,9 @@
   } while (0)
 
 #define trace(MSG) std::cout<<MSG<<std::endl;
+// Logs dont print to screen, unlike warning and error, wich do both screen and file
+// Logs::trace()
+// Logs::Verbose() // activate under flag VERBOSE
 
 // ARENA MOVE OTHER PLACE
 static constexpr size_t s_maxArenaSize {UINT64_MAX};
@@ -119,12 +122,21 @@ static StackArena s_rendererArena {100000}; // 100.000 bytes
  */
 struct s_MachineContext_vk{
 
-  VkPhysicalDevice*           p_physicalDevices; // array of physical devices availables
+  VkPhysicalDevice*           physicalDevices; // array of physical devices availables
   VkSurfaceFormatKHR*         p_surfaceFormats; // array of surface formats availables
   VkQueueFamilyProperties*    p_queueFamilies; // array of queue families availables
 
   VkApplicationInfo    appInfo;
   VkInstanceCreateInfo instanceCreateInfo;
+  VkDeviceCreateInfo   logicDeviceCreateInfo;
+  VkDeviceQueueCreateInfo queueCreateInfo;
+
+  // Features
+  VkPhysicalDeviceFeatures2        features2;
+  VkPhysicalDeviceVulkan11Features features11;
+  VkPhysicalDeviceVulkan13Features features13;
+
+
 
 };
 typedef s_MachineContext_vk MachineContext_vk;
@@ -190,8 +202,8 @@ struct s_RendererContext_vk{
   GLFWwindow* window;
   ViewPort_vk viewPort;
 
-  VkPhysicalDevice* p_physicalDevice;
-  VkDevice logicalDevice;
+  VkPhysicalDevice physicalDevice;
+  VkDevice logicDevice;
 
   uint32_t graphicsFamilyIndex;
   VkQueue graphicQueue;
@@ -275,11 +287,7 @@ void start_log_entry(char* path);
 void instanciate_renderer_core_vk()
 {
     s_renderer =  static_cast<kRendererCore_vk*>(malloc(sizeof(kRendererCore_vk)));// static_cast<kRendererCore_vk*>(s_rendererArena.push(sizeof(kRendererCore_vk)));
-    panic(s_renderer == nullptr, "WTH");
-
-    // instanciar todos los punteros necesarios
-    // TODO
- 
+    panic(s_renderer == nullptr, "WTH"); 
 
     // Renderer Context allocation
 
@@ -287,8 +295,8 @@ void instanciate_renderer_core_vk()
 
     s_renderer->p_context->window   = nullptr;
     s_renderer->p_context->instance = nullptr;
-    s_renderer->p_context->p_physicalDevice = nullptr;
-    s_renderer->p_context->logicalDevice    = nullptr;
+    s_renderer->p_context->physicalDevice = nullptr;
+    s_renderer->p_context->logicDevice    = nullptr;
     s_renderer->p_context->viewPort.width   = s_defaultWindowSize_x;
     s_renderer->p_context->viewPort.height  = s_defaultWindowSize_y;
     s_renderer->p_context->viewPort.surface         = nullptr;
@@ -302,7 +310,7 @@ void instanciate_renderer_core_vk()
 
     //s_renderer->p_machineContext->appInfo;
     //s_renderer->p_machineContext->instanceCreateInfo;
-    s_renderer->p_machineContext->p_physicalDevices  = nullptr;
+    s_renderer->p_machineContext->physicalDevices  = nullptr;
     s_renderer->p_machineContext->p_surfaceFormats   = nullptr;
     s_renderer->p_machineContext->p_queueFamilies    = nullptr;
 
@@ -344,12 +352,11 @@ void init_module_renderer(){
   trace("Initiating kRenderer module. ");
 
   kRendererCore_vk* renderer = get_renderer_core_instance_vk();
-  panic(renderer == nullptr, "couln't instantiate renderer");
+  panic(renderer == nullptr, "couln't instantiate renderer!");
 
   trace("Getting GLFW window.");
   get_GLFW_window(s_renderer);
 
-  trace("GLFW window obtained.");
   trace("Initialicing vulkan");
   init_vk(s_renderer);
 
@@ -360,26 +367,20 @@ void init_vk(kRendererCore_vk* renderer){
   trace("Allocating vulkan instance.");
   allocate_instance_vk(renderer);
 
-  trace("Vulkan instance successfully allocated.");
   trace("Allocating rendering surface.");
   allocate_surface_vk(renderer);
 
-  trace("Rendering surface successfully allocated.");
   trace("Setting up physical device.");
   setup_physical_device_vk(renderer);
 
-  trace("physical device successfully configured.");
   trace("Setting up logic device.");
   setup_logic_device_vk(renderer);
 
-  trace("Logic device setup complete.");
   trace("Settign up pipeline wapchain.");
   setup_swapchain_vk(renderer);
 
-  trace("Pipeline setup completed.");
   trace("setting up graphics pipeline.");
   setup_graphic_pipeline_vk(renderer);
-  trace("Pipeline setup completed.");
 
 }
 
@@ -473,25 +474,26 @@ void setup_physical_device_vk(kRendererCore_vk* renderer){
 
   panic(deviceCount == 0, "No Physical devices found!");
 
-  renderer->p_machineContext->p_physicalDevices = static_cast<VkPhysicalDevice *>(
+  renderer->p_machineContext->physicalDevices = static_cast<VkPhysicalDevice *>(
       malloc(sizeof(VkPhysicalDevice) * deviceCount));
 
   vkEnumeratePhysicalDevices(renderer->p_context->instance,
                              &deviceCount,
-                             renderer->p_machineContext->p_physicalDevices);
+                             renderer->p_machineContext->physicalDevices);
 
 
-  uint32_t device_index = choose_physical_device_vk(renderer->p_machineContext->p_physicalDevices, deviceCount);
+  uint32_t device_index = choose_physical_device_vk(renderer->p_machineContext->physicalDevices, deviceCount);
 
-  renderer->p_context->p_physicalDevice = &renderer->p_machineContext->p_physicalDevices[device_index];
+  renderer->p_context->physicalDevice = renderer->p_machineContext->physicalDevices[device_index];
 }
 
-uint32_t choose_physical_device_vk(VkPhysicalDevice* physicalDevices, uint32_t deviceCount){
 
-  // Checking for support on extensions
-  //    - for each device, get supported extensions for that device
-  //    - then compare them to the requierd extension
-  //    - if all extensions are supported, then select that device
+// Checking for support on extensions
+//    - for each device, get supported extensions for that device
+//    - then compare them to the requierd extension
+//    - if all extensions are supported, then select that device
+
+uint32_t choose_physical_device_vk(VkPhysicalDevice* physicalDevices, uint32_t deviceCount){
 
   uint8_t ext_supported = 0;
   uint32_t device_index = 0;
@@ -528,6 +530,77 @@ uint32_t choose_physical_device_vk(VkPhysicalDevice* physicalDevices, uint32_t d
 }
 
 void setup_logic_device_vk(kRendererCore_vk* renderer) {
+
+  // Get Family Queues
+
+  uint32_t queueFamilyCount = 0;
+  vkGetPhysicalDeviceQueueFamilyProperties(renderer->p_context->physicalDevice, 
+                                           &queueFamilyCount,
+                                           nullptr);
+  renderer->p_machineContext->p_queueFamilies = static_cast<VkQueueFamilyProperties *>(malloc(sizeof(VkQueueFamilyProperties) * queueFamilyCount));
+  vkGetPhysicalDeviceQueueFamilyProperties(renderer->p_context->physicalDevice, 
+                                           &queueFamilyCount,
+                                           renderer->p_machineContext->p_queueFamilies);
+
+  VkBool32 result;
+  for (int i = 0; i < queueFamilyCount; ++i) {
+    vkGetPhysicalDeviceSurfaceSupportKHR(renderer->p_context->physicalDevice, i, renderer->p_context->viewPort.surface, &result);
+
+    VkQueueFamilyProperties& r_queueFamilie = renderer->p_machineContext->p_queueFamilies[i];
+    if (r_queueFamilie.queueFlags & VK_QUEUE_GRAPHICS_BIT && result == VK_TRUE) {
+      renderer->p_context->graphicsFamilyIndex = i;
+      break;
+    }
+  }
+
+  panic(renderer->p_context->graphicsFamilyIndex == -1, "No graphic family Found!");
+
+  // Configuration of Logic Device
+
+  float queuePriority = 0.5f;
+
+  VkDeviceQueueCreateInfo& queueCreateInfo_ref = renderer->p_machineContext->queueCreateInfo;
+  queueCreateInfo_ref.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+  queueCreateInfo_ref.queueFamilyIndex = renderer->p_context->graphicsFamilyIndex;
+  queueCreateInfo_ref.queueCount       = 1;
+  queueCreateInfo_ref.pQueuePriorities = &queuePriority;
+
+  // Setting up features
+
+  VkPhysicalDeviceFeatures2& features2_ref = renderer->p_machineContext->features2;
+  features2_ref.sType                      = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+  features2_ref.features.geometryShader    = VK_TRUE;
+
+  VkPhysicalDeviceVulkan11Features& features11_ref = renderer->p_machineContext->features11;
+  features11_ref.sType                = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+  features11_ref.shaderDrawParameters = VK_TRUE;
+  features11_ref.pNext                = &features2_ref;
+
+  VkPhysicalDeviceVulkan13Features& r_features13 = renderer->p_machineContext->features13;
+  r_features13.sType            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+  r_features13.dynamicRendering = VK_TRUE;
+  r_features13.pNext            = &features11_ref;
+
+  VkDeviceCreateInfo& r_deviceCreateInfo      = renderer->p_machineContext->logicDeviceCreateInfo;
+  r_deviceCreateInfo.sType                    = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+  r_deviceCreateInfo.pQueueCreateInfos        = &queueCreateInfo_ref;
+  r_deviceCreateInfo.queueCreateInfoCount     = 1;
+  r_deviceCreateInfo.enabledExtensionCount    = s_requiredDeviceExtensionCount;
+  r_deviceCreateInfo.ppEnabledExtensionNames  = s_requiredDeviceExtensions;
+  r_deviceCreateInfo.pNext = &r_features13;
+
+  if (vkCreateDevice(renderer->p_context->physicalDevice,
+                     &r_deviceCreateInfo,
+                     nullptr,
+                     &renderer->p_context->logicDevice) != VK_SUCCESS)
+    panic(1==1,"Culdn't create logical device!");
+
+  // Setup of Graphics Queue
+
+  vkGetDeviceQueue(renderer->p_context->logicDevice,
+                   renderer->p_context->graphicsFamilyIndex,
+                   0,
+                   &renderer->p_context->graphicQueue);
 
 }
 
