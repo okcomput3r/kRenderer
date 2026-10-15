@@ -1,8 +1,11 @@
 #ifndef K_RENDERER_HEADER
 #define K_RENDERER_HEADER
 
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
+#include <cstdint>
 
 // define max value of uint32_t as an unreachable/invalid value for debug checking
 #define UINT32_INVALID_VALUE UINT32_MAX
@@ -13,15 +16,11 @@ static constexpr uint32_t s_defaultWindowSize_y {1080};
 
 static constexpr uint32_t s_maxImageCount {3};
 
-static const char* s_requiredDeviceExtensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-static const uint32_t s_requiredDeviceExtensionCount = 1;
+static constexpr char*    s_requiredDeviceExtensions[]   = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+static constexpr uint32_t s_requiredDeviceExtensionCount = 1;
 
-#include <vector>
 //#include <memory/memory.hpp>
 //#include <utils/logs.hpp>
-
-#include <cstdint>
-
 
 /**
  *  TODO
@@ -29,13 +28,11 @@ static const uint32_t s_requiredDeviceExtensionCount = 1;
  *  a base de un documento .json que especifica la configuración de 
  *  el renderizador
  *
+ *  privado
  *
  *
  */
-struct s_RedererDescriptor{
-
-
-};
+struct s_RedererDescriptor;
 typedef s_RedererDescriptor RendererDescriptor;
 
 /**
@@ -52,9 +49,10 @@ typedef s_kRendererCore_vk kRendererCore_vk;
 // Functions
 
 void init_module_renderer();
-void init_module_renderer(RendererDescriptor& renderConfig); // TODO implementation of rendererDescriptor
+void init_module_renderer(char*  renderConfig_path); // TODO implementation of rendererDescriptor
 void cleanup_module_renderer();
 
+GLFWwindow* retrieve_renderer_window();
 void entrypoint_render_frame();
 
 // igual pasar a la interfaz privada 

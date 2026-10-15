@@ -305,7 +305,8 @@ RET_CODE setup_swapchain_vk() {
   // Query and Choose surface formats (pixel format, color space )
   //
   uint32_t surfaceFormatCount;
-  vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface,
+  vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice,
+                                       surface,
                                        &surfaceFormatCount, nullptr);
   surfaceFormats = static_cast<VkSurfaceFormatKHR *>(
       malloc(sizeof(VkSurfaceFormatKHR) * surfaceFormatCount));
@@ -746,9 +747,10 @@ RET_CODE draw_frame_vk() {
 
 void entrypoint_mainloop_Vk() {
 
-  while (!glfwWindowShouldClose(window)) {
+  while (!glfwWindowShouldClose(retrieve_renderer_window())) {
     glfwPollEvents();
-    draw_frame_vk();
+    //draw_frame_vk();
+    entrypoint_render_frame();
   }
 }
 
@@ -768,12 +770,9 @@ void cleanup_Vk() {
 
 int main(int argc, char **argv) {
 
-  //renderer_info& renderer = renderer_info::getInstance();
-  //assert_paranoid(1==1, "wowkShocker");
-
-  std::cout << "hola" << std::endl;
   init_module_renderer();
 
+  entrypoint_mainloop_Vk();
   /*
   init_glfw_window();
 
@@ -786,6 +785,6 @@ int main(int argc, char **argv) {
 
   entrypoint_mainloop_Vk();
   cleanup_Vk();
-  */
+ */ 
   return 0;
 }

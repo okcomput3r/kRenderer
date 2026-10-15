@@ -14,7 +14,7 @@
   {
     "name" : "debug",
     "inherits" : "default",
-    "binaryDir" : "build/debug",
+    "binaryDir" : "build",
     "cacheVariables" : {
       "DEBUG" : {
         "type"  : "BOOL",
@@ -30,13 +30,13 @@
   {
     "name" : "debug-windows",
     "inherits" : "debug",
-    "binaryDir" : "build/debug/windows",
+    "binaryDir" : "build",
     "generator" : "Visual Studio 17 2022"
   },
   {
     "name" : "debug-linux",
     "inherits" : "debug",
-    "binaryDir" : "build/debug/linux",
+    "binaryDir" : "build",
     "generator" : "Unix Makefiles"
  
   },
