@@ -342,7 +342,7 @@ void setup_default_graphic_pipeline_vk(kRendererCore_vk* renderer); // without c
 void setup_command_pool_vk(kRendererCore_vk* renderer);
 void record_command_buffer(uint32_t imageIndex);
 void create_sync_objects(kRendererCore_vk* renderer);
-
+GLFWwindow* get_GLFW_window();
 
 // implementation
 
@@ -362,8 +362,27 @@ void init_module_renderer(GLFWwindow* window){
   renderer->p_context->window = window;
 
   trace("Initialicing vulkan");
-  init_vk(s_renderer);
+  init_vk(renderer);
 
+}
+
+void init_module_renderer(){
+  //Logs::start_log_session("Renderer");
+  trace("Initiating kRenderer module. ");
+
+  kRendererCore_vk* renderer = get_renderer_core_instance_vk();
+  panic(renderer == nullptr, "couln't instantiate renderer!");
+ 
+  renderer->p_context->window = get_GLFW_window();
+
+  trace("Initialicing vulkan");
+  init_vk(renderer);
+
+}
+
+GLFWwindow* retrieve_renderer_window(){
+
+  return get_renderer_core_instance_vk()->p_context->window;
 }
 
 kRendererCore_vk* get_renderer_core_instance_vk(){
@@ -459,6 +478,22 @@ void init_vk(kRendererCore_vk* renderer){
   trace("VULKAN SETUP DONE");
 }
 
+GLFWwindow* get_GLFW_window(){
+
+  glfwInit();
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+
+  GLFWwindow* window = nullptr;
+  window = glfwCreateWindow(s_defaultWindowSize_x,s_defaultWindowSize_y,
+                            "kEngine",
+                            nullptr,
+                            nullptr);
+  
+  panic(window == nullptr, "null window");
+  return window;
+}
 void allocate_instance_vk(kRendererCore_vk* renderer){
 
   // App Info
@@ -500,31 +535,30 @@ void allocate_instance_vk(kRendererCore_vk* renderer){
 
   // Check for validation layers
 
-  uint32_t vk_validationLayerCount = UINT32_INVALID_VALUE;
-  vkEnumerateInstanceLayerProperties(&vk_validationLayerCount, nullptr);
-  VkLayerProperties* p_layerProperties = static_cast<VkLayerProperties*>(malloc(sizeof(VkLayerProperties)*vk_validationLayerCount));
+  if (enableValidationLayers){
 
-  // Checking for layer(s) support
- 
-  for (uint32_t i = 0; i < s_validationLayersCount; ++i) {
-    supported = 0;
-    trace(s_validationLayers[i]);
-    for (uint32_t j = 0; j < vk_validationLayerCount; ++j) {
-      trace(p_layerProperties[j].layerName);
-      if (strcmp(s_validationLayers[i], p_layerProperties[j].layerName) == 0) {
-        supported = 1;
-        break;
+    uint32_t vk_validationLayerCount = UINT32_INVALID_VALUE;
+    vkEnumerateInstanceLayerProperties(&vk_validationLayerCount, nullptr);
+    VkLayerProperties* p_layerProperties = static_cast<VkLayerProperties*>(malloc(sizeof(VkLayerProperties)*vk_validationLayerCount));
+    vkEnumerateInstanceLayerProperties(&vk_validationLayerCount, p_layerProperties);
+
+    // Checking for layer(s) support
+
+    for (uint32_t i = 0; i < s_validationLayersCount; ++i) {
+      supported = 0;
+      for (uint32_t j = 0; j < vk_validationLayerCount; ++j) {
+        if (strcmp(s_validationLayers[i], p_layerProperties[j].layerName) == 0) {
+          supported = 1;
+          break;
+        }
+      }
+      if (!supported) {
+        free(p_layerProperties);
+        panic(!supported, "Vulkan Extensions not supported");
       }
     }
-    if (!supported) {
-      free(p_layerProperties);
-      panic(!supported, "Vulkan Extensions not supported");
-    }
+ 
   }
-
-
-
-
 
 
   // Create Instance Info
@@ -533,8 +567,8 @@ void allocate_instance_vk(kRendererCore_vk* renderer){
   createInfo_ref.pApplicationInfo        = &appInfo_ref;
   createInfo_ref.enabledExtensionCount   = glfwExtensionCount;
   createInfo_ref.ppEnabledExtensionNames = glfwExtensions;
-  createInfo_ref.enabledLayerCount       = 0;
-  createInfo_ref.ppEnabledLayerNames     = nullptr;
+  createInfo_ref.enabledLayerCount       = s_validationLayersCount;
+  createInfo_ref.ppEnabledLayerNames     = s_validationLayers;
 
   // Instance
   if (vkCreateInstance(&createInfo_ref, nullptr, &renderer->p_context->instance) != VK_SUCCESS)
@@ -790,6 +824,7 @@ void setup_swapchain_vk(kRendererCore_vk* renderer) {
   VkSurfaceFormatKHR* surfaceFormats = renderer->p_machineContext->p_surfaceFormats;
 
   VkSwapchainCreateInfoKHR& swapchainCreateInfo = renderer->p_machineContext->swapchainCreateInfo;
+  swapchainCreateInfo.sType              = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
   swapchainCreateInfo.surface           = r_surface;
   swapchainCreateInfo.minImageCount     = minImageCount;
   swapchainCreateInfo.imageFormat       = surfaceFormats[surfaceFormatIndex].format;
@@ -821,10 +856,11 @@ void setup_swapchain_vk(kRendererCore_vk* renderer) {
   renderer->p_swapchain->p_swapChainImageViews = static_cast<VkImageView*>(malloc(sizeof(VkImageView) * imageCount));
 
   VkImageViewCreateInfo imageViewCreateInfo{};
-  imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-  imageViewCreateInfo.format = surfaceFormats[surfaceFormatIndex].format;
+  imageViewCreateInfo.sType            = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+  imageViewCreateInfo.viewType         = VK_IMAGE_VIEW_TYPE_2D;
+  imageViewCreateInfo.format           = surfaceFormats[surfaceFormatIndex].format;
   imageViewCreateInfo.subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                                          .levelCount = 0,
+                                          .levelCount = 1,
                                           .layerCount = 1};
   imageViewCreateInfo.components = {VK_COMPONENT_SWIZZLE_IDENTITY,
                                     VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -848,24 +884,27 @@ void setup_graphic_pipeline_vk(kRendererCore_vk* renderer) {
   VkDevice&       device       = renderer->p_context->logicDevice;
   VkShaderModule& shaderModule = renderer->p_pipeline->shaderModule;
 
-  std::vector<char> shaderCode = readFile("./slang.spv");
+  std::vector<char> shaderCode = readFile(SHADERS_SOURCE_DIR + std::string("/slang.spv"));
 
   // Create shader module
 
   VkShaderModuleCreateInfo createInfo{};
-  createInfo.codeSize = shaderCode.size() * sizeof(char);
-  createInfo.pCode = reinterpret_cast<const uint32_t *>(shaderCode.data());
+  createInfo.sType     = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+  createInfo.codeSize  = shaderCode.size() * sizeof(char);
+  createInfo.pCode     = reinterpret_cast<const uint32_t *>(shaderCode.data());
 
   vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule);
 
   // Instanciate shader stages
 
   VkPipelineShaderStageCreateInfo vertexShaderStageInfo{};
+  vertexShaderStageInfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
   vertexShaderStageInfo.stage  = VK_SHADER_STAGE_VERTEX_BIT;
   vertexShaderStageInfo.module = shaderModule;
   vertexShaderStageInfo.pName  = "vertMain";
 
   VkPipelineShaderStageCreateInfo fragmentShaderStageInfo{};
+  fragmentShaderStageInfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
   fragmentShaderStageInfo.stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
   fragmentShaderStageInfo.module = shaderModule;
   fragmentShaderStageInfo.pName  = "fragMain";
@@ -884,22 +923,26 @@ void setup_graphic_pipeline_vk(kRendererCore_vk* renderer) {
   //  -- colorBlending [Attatchment & Blending]
 
   VkPipelineVertexInputStateCreateInfo& vertexInputState = renderer->p_pipeline->vertexInputState;
+  vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
   VkPipelineInputAssemblyStateCreateInfo& inputAssemblyState = renderer->p_pipeline->inputAssemblyState; // descartar al pasar a mesh rendering
+  inputAssemblyState.sType    = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
   inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
   VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT,
                                     VK_DYNAMIC_STATE_SCISSOR};
   VkPipelineDynamicStateCreateInfo& dynamicState = renderer->p_pipeline->dynamicState;
+  dynamicState.sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
   dynamicState.dynamicStateCount = 2; // hardcode TODO
   dynamicState.pDynamicStates    = dynamicStates;
 
   VkPipelineViewportStateCreateInfo& viewportState = renderer->p_pipeline->viewPortState;
+  viewportState.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
   viewportState.viewportCount = 1;
   viewportState.scissorCount  = 1;
 
   VkPipelineRasterizationStateCreateInfo& rasterizerState = renderer->p_pipeline->rasterizerState;
-
+  rasterizerState.sType            = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
   rasterizerState.depthClampEnable = VK_FALSE;
   rasterizerState.polygonMode      = VK_POLYGON_MODE_FILL;
   rasterizerState.cullMode         = VK_CULL_MODE_BACK_BIT;
@@ -908,16 +951,19 @@ void setup_graphic_pipeline_vk(kRendererCore_vk* renderer) {
   rasterizerState.lineWidth        = 1.0f;
 
   VkPipelineMultisampleStateCreateInfo& multisamplingState = renderer->p_pipeline->multisamplingState;
+  multisamplingState.sType                = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
   multisamplingState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
   multisamplingState.sampleShadingEnable  = VK_FALSE;
 
   VkPipelineColorBlendAttachmentState& colorBlendingAttachmentState = renderer->p_pipeline->colorBlendingAttachmentState;
+  //colorBlendingAttachmentState.sType          = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_ATTACHMENT_STATE_CREATE_INFO;
   colorBlendingAttachmentState.blendEnable    = VK_FALSE;
   colorBlendingAttachmentState.colorWriteMask =
       VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
       VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 
   VkPipelineColorBlendStateCreateInfo& colorBlendingState = renderer->p_pipeline->colorBlendindState;
+  colorBlendingState.sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
   colorBlendingState.logicOpEnable   = VK_FALSE;
   colorBlendingState.logicOp         = VK_LOGIC_OP_COPY;
   colorBlendingState.attachmentCount = 1;
@@ -926,6 +972,7 @@ void setup_graphic_pipeline_vk(kRendererCore_vk* renderer) {
   // Pipeline layout 
 
   VkPipelineLayoutCreateInfo& pipelineLayoutInfo = renderer->p_pipeline->pipelineLayoutInfo;
+  pipelineLayoutInfo.sType                   = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipelineLayoutInfo.setLayoutCount         = 0;
   pipelineLayoutInfo.pushConstantRangeCount = 0;
 
@@ -935,10 +982,12 @@ void setup_graphic_pipeline_vk(kRendererCore_vk* renderer) {
                          &renderer->p_pipeline->pipelineLayout);
 
   VkPipelineRenderingCreateInfo& pipelineRenderingCreateInfo = renderer->p_pipeline->pipelineRenderingCreateInfo;
-  pipelineRenderingCreateInfo.colorAttachmentCount = 1;
+  pipelineRenderingCreateInfo.sType                    = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+  pipelineRenderingCreateInfo.colorAttachmentCount    = 1;
   pipelineRenderingCreateInfo.pColorAttachmentFormats = &renderer->p_machineContext->p_surfaceFormats[renderer->p_machineContext->surfaceFormatIndex].format;
 
   VkGraphicsPipelineCreateInfo& graphicsPipelineCreateInfo = renderer->p_pipeline->graphicsPipelineCreateInfo;
+  graphicsPipelineCreateInfo.sType                 = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
   graphicsPipelineCreateInfo.stageCount           = 2;
   graphicsPipelineCreateInfo.pStages              = shaderStages;
   graphicsPipelineCreateInfo.pVertexInputState    = &vertexInputState;
@@ -960,21 +1009,21 @@ void setup_graphic_pipeline_vk(kRendererCore_vk* renderer) {
 void setup_command_pool_vk(kRendererCore_vk* renderer){
 
   VkDevice& device               = renderer->p_context->logicDevice;
-  VkCommandPool& commandPool     = renderer->concurrence.commandPool;
-  VkCommandBuffer& commandBuffer = renderer->concurrence.commandBuffer;
 
   VkCommandPoolCreateInfo poolInfo{};
+  poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
   poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
   poolInfo.queueFamilyIndex = renderer->p_context->graphicsFamilyIndex;
 
-  vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool);
+  vkCreateCommandPool(device, &poolInfo, nullptr, &renderer->concurrence.commandPool);
 
   VkCommandBufferAllocateInfo allocInfo{};
-  allocInfo.commandPool        = commandPool;
+  allocInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+  allocInfo.commandPool        = renderer->concurrence.commandPool;
   allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   allocInfo.commandBufferCount = 1;
 
-  vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+  vkAllocateCommandBuffers(device, &allocInfo, &renderer->concurrence.commandBuffer);
 
 }
 
@@ -983,6 +1032,7 @@ void record_command_buffer(kRendererCore_vk* renderer, uint32_t imageIndex){
   VkCommandBuffer& commandBuffer = renderer->concurrence.commandBuffer;
 
   VkCommandBufferBeginInfo beginInfo{};
+  beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
   // Transition imagen layout from undefined to eColorAttatchmentOptimal
@@ -997,20 +1047,21 @@ void record_command_buffer(kRendererCore_vk* renderer, uint32_t imageIndex){
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.image               = renderer->p_swapchain->p_swapChainImages[imageIndex];
-  barrier.subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                              .baseMipLevel = 0,
-                              .levelCount = 1,
+  barrier.subresourceRange = {.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                              .baseMipLevel   = 0,
+                              .levelCount     = 1,
                               .baseArrayLayer = 0,
-                              .layerCount = 1};
+                              .layerCount     = 1};
 
-  VkDependencyInfo dependency_info = {};
-  dependency_info.dependencyFlags = {};
+  VkDependencyInfo dependency_info        = {};
+  dependency_info.dependencyFlags         = {};
   dependency_info.imageMemoryBarrierCount = 1;
-  dependency_info.pImageMemoryBarriers = &barrier;
+  dependency_info.pImageMemoryBarriers    = &barrier;
 
-  vkCmdPipelineBarrier2(commandBuffer, &dependency_info);
+  vkCmdPipelineBarrier2(renderer->concurrence.commandBuffer, &dependency_info);
+  trace("here");
 
-  // Setup clear color (black background)
+  // Setup clear color (black backgroundn)
 
   VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
 
@@ -1088,12 +1139,16 @@ void create_sync_objects(kRendererCore_vk* renderer){
 
 
   VkSemaphoreCreateInfo semaphoreCreateInfo{};
+  semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
   vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr,
                     &renderer->concurrence.presentCompleteSemaphore);
   vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr,
                     &renderer->concurrence.renderFinishedSemaphore);
 
-  VkFenceCreateInfo fenceCreateInfo = {.flags = VK_FENCE_CREATE_SIGNALED_BIT};
+  VkFenceCreateInfo fenceCreateInfo {};
+  fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+  fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
   vkCreateFence(device, &fenceCreateInfo, nullptr, &renderer->concurrence.drawFence);
 }
 

@@ -46,9 +46,13 @@ typedef s_RedererDescriptor RendererDescriptor;
 
 // Functions
 
+void init_module_renderer(); // TODO remove later
+GLFWwindow* retrieve_renderer_window();
 void init_module_renderer(GLFWwindow* window);
 void init_module_renderer(GLFWwindow* window, char*  renderConfig_path); // TODO implementation of rendererDescriptor
 void cleanup_module_renderer();
+
+
 
 void entrypoint_render_frame();
 

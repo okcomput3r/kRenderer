@@ -11,9 +11,10 @@
 
 #include <renderer/renderer.hpp>
 
-GLFWwindow* window = nullptr;
 
 void entrypoint_mainloop_Vk() {
+
+  GLFWwindow* window = retrieve_renderer_window();
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
     entrypoint_render_frame();
@@ -35,26 +36,12 @@ void cleanup_Vk() {
 }
 */
 
-void get_GLFW_window(){
 
-  glfwInit();
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-  window = glfwCreateWindow(1920,
-                            1080,
-                            "kEngine",
-                            nullptr,
-                            nullptr);
-
-}
 
 
 int main(int argc, char **argv) {
 
-  get_GLFW_window();
-
-  init_module_renderer(window);
+  init_module_renderer();
   entrypoint_mainloop_Vk();
 
   return 0;
