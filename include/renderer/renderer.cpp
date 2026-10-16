@@ -331,7 +331,6 @@ static StackArena s_rendererArena {100000}; // 100.000 bytes
 void instanciate_renderer_core_vk();
 kRendererCore_vk* get_renderer_core_instance_vk();
 void init_vk(kRendererCore_vk* renderer);
-void get_GLFW_window(kRendererCore_vk* renderer);
 void allocate_instance_vk(kRendererCore_vk* renderer);
 void allocate_surface_vk(kRendererCore_vk* renderer);
 void setup_physical_device_vk(kRendererCore_vk* renderer);
@@ -350,16 +349,17 @@ void create_sync_objects(kRendererCore_vk* renderer);
 
 
 
-void init_module_renderer(){
+void init_module_renderer(GLFWwindow* window){
 
   //Logs::start_log_session("Renderer");
   trace("Initiating kRenderer module. ");
 
+  panic(window == nullptr, "pointer to glfw window is null");
+
   kRendererCore_vk* renderer = get_renderer_core_instance_vk();
   panic(renderer == nullptr, "couln't instantiate renderer!");
-
-  trace("Getting GLFW window.");
-  get_GLFW_window(s_renderer);
+ 
+  renderer->p_context->window = window;
 
   trace("Initialicing vulkan");
   init_vk(s_renderer);
@@ -459,36 +459,16 @@ void init_vk(kRendererCore_vk* renderer){
   trace("VULKAN SETUP DONE");
 }
 
-void get_GLFW_window(kRendererCore_vk* renderer){
-
-  glfwInit();
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-  renderer->p_context->window = glfwCreateWindow(renderer->p_context->viewPort.width,
-                                              renderer->p_context->viewPort.height,
-                                              "kEngine",
-                                              nullptr,
-                                              nullptr);
-
-  panic(renderer->p_context->window == nullptr, "Couldn't get GLFW Window!");
-
-}
-
-GLFWwindow* retrieve_renderer_window(){
-  return get_renderer_core_instance_vk()->p_context->window;
-}
-
 void allocate_instance_vk(kRendererCore_vk* renderer){
 
   // App Info
-  VkApplicationInfo& appInfo_ref = renderer->p_machineContext->appInfo;
-  appInfo_ref.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-  appInfo_ref.pApplicationName = "kEngine";
-  appInfo_ref.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-  appInfo_ref.pEngineName = "Kilby Engine";
-  appInfo_ref.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-  appInfo_ref.apiVersion = VK_API_VERSION_1_0;
+  VkApplicationInfo& appInfo_ref  = renderer->p_machineContext->appInfo;
+  appInfo_ref.sType               = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+  appInfo_ref.pApplicationName    = "kEngine";
+  appInfo_ref.applicationVersion  = VK_MAKE_VERSION(1, 0, 0);
+  appInfo_ref.pEngineName         = "Kilby Engine";
+  appInfo_ref.engineVersion       = VK_MAKE_VERSION(1, 0, 0);
+  appInfo_ref.apiVersion          = VK_API_VERSION_1_0;
 
   // get required extensions
   uint32_t glfwExtensionCount = 0;
@@ -517,6 +497,36 @@ void allocate_instance_vk(kRendererCore_vk* renderer){
   }
   free(vulkanExtensions);
 
+
+  // Check for validation layers
+
+  uint32_t vk_validationLayerCount = UINT32_INVALID_VALUE;
+  vkEnumerateInstanceLayerProperties(&vk_validationLayerCount, nullptr);
+  VkLayerProperties* p_layerProperties = static_cast<VkLayerProperties*>(malloc(sizeof(VkLayerProperties)*vk_validationLayerCount));
+
+  // Checking for layer(s) support
+ 
+  for (uint32_t i = 0; i < s_validationLayersCount; ++i) {
+    supported = 0;
+    trace(s_validationLayers[i]);
+    for (uint32_t j = 0; j < vk_validationLayerCount; ++j) {
+      trace(p_layerProperties[j].layerName);
+      if (strcmp(s_validationLayers[i], p_layerProperties[j].layerName) == 0) {
+        supported = 1;
+        break;
+      }
+    }
+    if (!supported) {
+      free(p_layerProperties);
+      panic(!supported, "Vulkan Extensions not supported");
+    }
+  }
+
+
+
+
+
+
   // Create Instance Info
   VkInstanceCreateInfo& createInfo_ref   = renderer->p_machineContext->instanceCreateInfo;
   createInfo_ref.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -527,7 +537,6 @@ void allocate_instance_vk(kRendererCore_vk* renderer){
   createInfo_ref.ppEnabledLayerNames     = nullptr;
 
   // Instance
-
   if (vkCreateInstance(&createInfo_ref, nullptr, &renderer->p_context->instance) != VK_SUCCESS)
     panic(1==1,"Unable to create vulkan instance");
 

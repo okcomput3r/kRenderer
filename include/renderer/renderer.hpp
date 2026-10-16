@@ -19,6 +19,15 @@ static constexpr uint32_t s_maxImageCount {3};
 static constexpr char*    s_requiredDeviceExtensions[]   = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 static constexpr uint32_t s_requiredDeviceExtensionCount = 1;
 
+static const     char*    s_validationLayers[]    = { "VK_LAYER_KHRONOS_validation" };
+static constexpr uint32_t s_validationLayersCount = 1;
+
+#ifdef __DEBUG__
+constexpr uint8_t enableValidationLayers = 1;
+#else
+constexpr uint8_t enableValidationLayers = 0;
+#endif
+
 //#include <memory/memory.hpp>
 //#include <utils/logs.hpp>
 
@@ -37,14 +46,13 @@ typedef s_RedererDescriptor RendererDescriptor;
 
 // Functions
 
-void init_module_renderer();
-void init_module_renderer(char*  renderConfig_path); // TODO implementation of rendererDescriptor
+void init_module_renderer(GLFWwindow* window);
+void init_module_renderer(GLFWwindow* window, char*  renderConfig_path); // TODO implementation of rendererDescriptor
 void cleanup_module_renderer();
 
-GLFWwindow* retrieve_renderer_window();
 void entrypoint_render_frame();
 
-// igual pasar a la interfaz privada 
+// igual pasar a la interfaz privada
 void load_renderer_configuration(char* configPath, RendererDescriptor& renderConfig); // TODO
 void parse_renderer_configuration(char* rawText, RendererDescriptor& renderConfig);   // TODO
 RendererDescriptor& get_renderer_configuration(); // TODO
