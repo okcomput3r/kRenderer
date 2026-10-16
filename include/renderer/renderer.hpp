@@ -16,11 +16,16 @@ static constexpr uint32_t s_defaultWindowSize_y {1080};
 
 static constexpr uint32_t s_maxImageCount {3};
 
-static constexpr char*    s_requiredDeviceExtensions[]   = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-static constexpr uint32_t s_requiredDeviceExtensionCount = 1;
+static constexpr uint32_t s_requiredDeviceExtensionCount = 4;
+static constexpr char*    s_requiredDeviceExtensions[]   = {
+                                                            VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME,
+                                                            VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+                                                            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+                                                            VK_KHR_SPIRV_1_4_EXTENSION_NAME
+                                                            };
 
-static const     char*    s_validationLayers[]    = { "VK_LAYER_KHRONOS_validation" };
 static constexpr uint32_t s_validationLayersCount = 1;
+static const     char*    s_validationLayers[]    = { "VK_LAYER_KHRONOS_validation" };
 
 #ifdef __DEBUG__
 constexpr uint8_t enableValidationLayers = 1;
