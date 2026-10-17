@@ -884,6 +884,7 @@ void setup_graphic_pipeline_vk(kRendererCore_vk* renderer) {
   VkDevice&       device       = renderer->p_context->logicDevice;
   VkShaderModule& shaderModule = renderer->p_pipeline->shaderModule;
 
+  //TODO crashout in windows rn
   std::vector<char> shaderCode = readFile(SHADERS_SOURCE_DIR + std::string("/slang.spv"));
 
   // Create shader module
@@ -1054,6 +1055,7 @@ void record_command_buffer(kRendererCore_vk* renderer, uint32_t imageIndex){
                               .layerCount     = 1};
 
   VkDependencyInfo dependency_info        = {};
+  dependency_info.sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
   dependency_info.dependencyFlags         = {};
   dependency_info.imageMemoryBarrierCount = 1;
   dependency_info.pImageMemoryBarriers    = &barrier;
