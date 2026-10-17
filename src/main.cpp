@@ -9,7 +9,7 @@
 //#define _OK_LOGS_IMPL
 //#include <utils/logs.hpp>
 
-#include <renderer/renderer.hpp>
+#include <renderer/core.hpp>
 
 
 void entrypoint_mainloop_Vk() {

@@ -1,4 +1,4 @@
-#include <renderer/renderer.hpp>
+#include <renderer/core.hpp>
 #include <sys/types.h>
 
 #define GLFW_INCLUDE_VULKAN
