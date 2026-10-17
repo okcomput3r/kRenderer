@@ -503,7 +503,7 @@ void allocate_instance_vk(kRendererCore_vk* renderer){
   appInfo_ref.applicationVersion  = VK_MAKE_VERSION(1, 0, 0);
   appInfo_ref.pEngineName         = "Kilby Engine";
   appInfo_ref.engineVersion       = VK_MAKE_VERSION(1, 0, 0);
-  appInfo_ref.apiVersion          = VK_API_VERSION_1_0;
+  appInfo_ref.apiVersion          = VK_API_VERSION_1_4;
 
   // get required extensions
   uint32_t glfwExtensionCount = 0;
@@ -1059,7 +1059,6 @@ void record_command_buffer(kRendererCore_vk* renderer, uint32_t imageIndex){
   dependency_info.pImageMemoryBarriers    = &barrier;
 
   vkCmdPipelineBarrier2(renderer->concurrence.commandBuffer, &dependency_info);
-  trace("here");
 
   // Setup clear color (black backgroundn)
 
